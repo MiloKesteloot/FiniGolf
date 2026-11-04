@@ -18,9 +18,12 @@ namespace FiniGolf
 
         [Header("Rules")]
         public int startingHearts = 3;
-        [Range(0f, 1f)] public float upgradeChance = 0.25f;
+        [Tooltip("Chance of a powerup on a hole while at full health.")]
+        [Range(0f, 1f)] public float upgradeChance = 0.4f;
+        [Tooltip("Chance multiplier at 2 hearts. At 1 heart (or less) every hole has a powerup.")]
+        public float twoHeartsUpgradeMultiplier = 2f;
         [Tooltip("Guarantee an upgrade if none has appeared for this many holes.")]
-        public int upgradePityHoles = 6;
+        public int upgradePityHoles = 2;
         public float holeCompleteDelay = 2.6f;
 
         public int Hole { get; private set; } = 1;
@@ -36,6 +39,17 @@ namespace FiniGolf
         public bool InTransition { get; private set; } = true;
         public bool CanShoot => !IsGameOver && !IsPaused && !InTransition;
         public int BestHoles => PlayerPrefs.GetInt(BestHolesKey, 0);
+
+        /// <summary>Powerups get more common as you lose hearts: always at 1 heart, ~2x at 2 hearts.</summary>
+        public float CurrentUpgradeChance
+        {
+            get
+            {
+                if (Hearts <= 1) return 1f;
+                if (Hearts == 2) return Mathf.Clamp01(upgradeChance * twoHeartsUpgradeMultiplier);
+                return upgradeChance;
+            }
+        }
 
         public event Action StatsChanged;
         public event Action<string, Color> Toast;
@@ -82,24 +96,23 @@ namespace FiniGolf
             Strokes = 0;
 
             UpgradeType pickup = UpgradeType.None;
-            if (Hole > 1 && (rng.NextDouble() < upgradeChance || holesSinceUpgrade >= upgradePityHoles))
-            {
+            if (rng.NextDouble() < CurrentUpgradeChance || holesSinceUpgrade >= upgradePityHoles)
                 pickup = Upgrades.Pickable[rng.Next(Upgrades.Pickable.Length)];
-                holesSinceUpgrade = 0;
-            }
-            else
-            {
-                holesSinceUpgrade++;
-            }
 
             var course = CourseManager.Instance;
             course.Generate(Hole, runSeed + Hole * 7919, pickup);
             Par = course.Par;
 
+            // Only count it if it really made it onto the course.
+            pickup = course.PlacedPickup;
+            if (pickup != UpgradeType.None) holesSinceUpgrade = 0;
+            else holesSinceUpgrade++;
+
             var ball = BallManager.Instance;
             ball.SetUpgrade(UpgradeType.None);
             ball.PlaceAt(course.StartPosition);
             ActivateBankedUpgrade(false);
+            ShowBestPath();
 
             var camRig = CameraController.Instance;
             if (camRig != null)
@@ -163,7 +176,23 @@ namespace FiniGolf
             }
 
             ActivateBankedUpgrade(true);
+            ShowBestPath();
             StatsChanged?.Invoke();
+        }
+
+        /// <summary>Runs A* from the ball to the cup and draws the guide line.</summary>
+        private void ShowBestPath()
+        {
+            var ball = BallManager.Instance;
+            var course = CourseManager.Instance;
+            if (ball == null || course == null || ball.Body == null) return;
+            var guide = PathGuide.Ensure(course.assets);
+            guide.ShowFrom(ball.Body.position);
+        }
+
+        private static void HideBestPath()
+        {
+            if (PathGuide.Instance != null) PathGuide.Instance.Hide();
         }
 
         public void BankUpgrade(UpgradeType type)
@@ -189,6 +218,7 @@ namespace FiniGolf
             InTransition = true;
             HolesCompleted++;
             ActiveUpgrade = UpgradeType.None;
+            HideBestPath();
             StatsChanged?.Invoke();
             HoleCompleted?.Invoke(Strokes, Par);
             StartCoroutine(NextHoleRoutine());
@@ -205,6 +235,7 @@ namespace FiniGolf
         {
             if (IsGameOver) return;
             InTransition = true;
+            HideBestPath();
             if (CameraController.Instance != null) CameraController.Instance.FollowTarget = false;
             Toast?.Invoke("Splat! Off the course...", new Color(1f, 0.4f, 0.4f));
             StartCoroutine(DelayedGameOver("You fell off the course!", 1.4f));

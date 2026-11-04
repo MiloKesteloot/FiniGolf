@@ -26,6 +26,9 @@ namespace FiniGolf
         public Material beachBallMaterial;
         public Material hazardMaterial;
         public Material pickupMaterial;
+        public Material pathMaterial;
+        [Tooltip("Transparent copy of the tile material, used when structures fade.")]
+        public Material fadedTileMaterial;
 
         [Header("UI")]
         public Sprite heartSprite;

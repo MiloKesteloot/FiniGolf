@@ -54,6 +54,8 @@ namespace FiniGolf
         /// <summary>Plain tile: good for pickups and moving hazards.</summary>
         public bool plain;
         public bool windmill;
+        /// <summary>Tall structure that fades out when it hides the ball or cup.</summary>
+        public bool tall;
         /// <summary>Kit-space edge the ball should preferably enter from (-1 = any).</summary>
         public int preferredEntry = -1;
 
@@ -98,22 +100,22 @@ namespace FiniGolf
         public static readonly List<TileDef> Straights = new List<TileDef>
         {
             new TileDef { model = "straight", role = TileRole.Straight, weight = 10f, plain = true },
-            new TileDef { model = "windmill", role = TileRole.Straight, weight = 3f, maxPerCourse = 1, windmill = true, preferredEntry = Edge.S },
-            new TileDef { model = "tunnel-wide", role = TileRole.Straight, weight = 1.5f, maxPerCourse = 2 },
+            new TileDef { model = "windmill", role = TileRole.Straight, weight = 3f, maxPerCourse = 1, windmill = true, tall = true, preferredEntry = Edge.S },
+            new TileDef { model = "tunnel-wide", role = TileRole.Straight, weight = 1.5f, tall = true, maxPerCourse = 2 },
             new TileDef { model = "bump-walls", role = TileRole.Straight, weight = 2f, minLevel = 2 },
             new TileDef { model = "bump-down-walls", role = TileRole.Straight, weight = 1.5f, minLevel = 2 },
             new TileDef { model = "crest", role = TileRole.Straight, weight = 1.5f, minLevel = 2 },
-            new TileDef { model = "castle", role = TileRole.Straight, weight = 1.5f, minLevel = 2, maxPerCourse = 1 },
+            new TileDef { model = "castle", role = TileRole.Straight, weight = 1.5f, tall = true, minLevel = 2, maxPerCourse = 1 },
             new TileDef { model = "hill-round", role = TileRole.Straight, weight = 2f, minLevel = 3 },
             new TileDef { model = "hill-square", role = TileRole.Straight, weight = 1.5f, minLevel = 3 },
             new TileDef { model = "split", role = TileRole.Straight, weight = 1.5f, minLevel = 3 },
             new TileDef { model = "obstacle-block", role = TileRole.Straight, weight = 2f, minLevel = 3 },
             new TileDef { model = "narrow-block", role = TileRole.Straight, weight = 1.5f, minLevel = 4 },
             new TileDef { model = "narrow-round", role = TileRole.Straight, weight = 1.5f, minLevel = 4 },
-            new TileDef { model = "tunnel-narrow", role = TileRole.Straight, weight = 1.2f, minLevel = 4, maxPerCourse = 2 },
+            new TileDef { model = "tunnel-narrow", role = TileRole.Straight, weight = 1.2f, tall = true, minLevel = 4, maxPerCourse = 2 },
             new TileDef { model = "wall-left", role = TileRole.Straight, weight = 1f, minLevel = 5 },
             new TileDef { model = "wall-right", role = TileRole.Straight, weight = 1f, minLevel = 5 },
-            new TileDef { model = "tunnel-double", role = TileRole.Straight, weight = 1f, minLevel = 5, maxPerCourse = 1 },
+            new TileDef { model = "tunnel-double", role = TileRole.Straight, weight = 1f, tall = true, minLevel = 5, maxPerCourse = 1 },
             new TileDef { model = "narrow-square", role = TileRole.Straight, weight = 1f, minLevel = 6 },
         };
 

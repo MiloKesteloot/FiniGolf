@@ -9,6 +9,18 @@ namespace FiniGolf
     /// </summary>
     public class CourseManager : Singleton<CourseManager>
     {
+        /// <summary>
+        /// Layer for per-tile "occlusion only" colliders of fadeable tiles. It collides with nothing;
+        /// it only exists so the camera can tell which structure is hiding the ball.
+        /// </summary>
+        public const int OcclusionLayer = 31;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            for (int i = 0; i < 32; i++) Physics.IgnoreLayerCollision(OcclusionLayer, i, true);
+        }
+
         [Header("References")]
         public GameAssets assets;
         public Transform courseRoot;
@@ -24,11 +36,32 @@ namespace FiniGolf
         public Vector3 StartForward { get; private set; }
         public Vector3 HolePosition { get; private set; }
         public int Par { get; private set; }
+        /// <summary>The upgrade actually placed on this hole (None if there was nowhere to put it).</summary>
+        public UpgradeType PlacedPickup { get; private set; }
         public int Length { get; private set; }
         public Bounds Bounds { get; private set; }
         public float KillY { get; private set; }
         public float CupRadius => 0.067f * tileScale;
         public float ModelScale => tileScale / nativeSize;
+
+        /// <summary>World-space floor height range (min, max) of every tile cell on the current hole.</summary>
+        public IReadOnlyDictionary<Vector2Int, Vector2> TileFloors => tileFloors;
+        private readonly Dictionary<Vector2Int, Vector2> tileFloors = new Dictionary<Vector2Int, Vector2>();
+
+        private CoursePathfinder pathfinder;
+        /// <summary>Walkability grid + A* for the current hole (built lazily on first use).</summary>
+        public CoursePathfinder Pathfinder
+        {
+            get
+            {
+                if (pathfinder == null)
+                {
+                    pathfinder = new CoursePathfinder();
+                    pathfinder.Build(this);
+                }
+                return pathfinder;
+            }
+        }
 
         private float nativeSize = 1f;
         private float floorBase = 0.0633f;
@@ -53,6 +86,7 @@ namespace FiniGolf
         private readonly List<Slot> slots = new List<Slot>();
         private readonly List<GameObject> spawnedTiles = new List<GameObject>();
         private Mesh courseCollisionMesh;
+        private PickupPool pickupPool;
 
         // ------------------------------------------------------------------
         // Calibration: probe the imported meshes to learn scale and orientation.
@@ -187,6 +221,9 @@ namespace FiniGolf
 
         public void Clear()
         {
+            // Pooled pickups are disabled and kept, not destroyed with the course.
+            pickupPool?.ReleaseAll();
+
             if (courseRoot == null)
             {
                 courseRoot = new GameObject("Course").transform;
@@ -199,6 +236,8 @@ namespace FiniGolf
             }
             slots.Clear();
             spawnedTiles.Clear();
+            tileFloors.Clear();
+            pathfinder = null;
             if (courseCollisionMesh != null) Destroy(courseCollisionMesh);
             courseCollisionMesh = null;
         }
@@ -323,7 +362,9 @@ namespace FiniGolf
                 }
             }
 
-            // ---- Upgrade pickup on a plain straight near the middle ----
+            // ---- Upgrade pickup near the middle of the hole ----
+            // Prefer plain straights, then any other open (non-tunnel) tile incl. corners, so it always spawns.
+            PlacedPickup = UpgradeType.None;
             if (pickup != UpgradeType.None)
             {
                 Slot best = null;
@@ -331,11 +372,16 @@ namespace FiniGolf
                 for (int i = 1; i < slots.Count - 1; i++)
                 {
                     var s = slots[i];
-                    if (!s.def.plain || s.hasHazard) continue;
+                    if (s.hasHazard || s.def.tall) continue;
                     float score = Mathf.Abs(i - slots.Count * 0.5f) + (float)rng.NextDouble();
+                    if (!s.def.plain) score += s.def.role == TileRole.Corner ? 6f : 4f;
                     if (score < bestScore) { bestScore = score; best = s; }
                 }
-                if (best != null) best.hasPickup = true;
+                if (best != null)
+                {
+                    best.hasPickup = true;
+                    PlacedPickup = pickup;
+                }
             }
 
             // ---- Spawn everything ----
@@ -352,6 +398,12 @@ namespace FiniGolf
             Bounds = bounds;
             KillY = minY - 0.5f * tileScale;
             MergeCourseColliders();
+
+            foreach (var s in slots)
+            {
+                float a = (s.hIn + floorBase) * tileScale, b = (s.hOut + floorBase) * tileScale;
+                tileFloors[s.cell] = new Vector2(Mathf.Min(a, b), Mathf.Max(a, b));
+            }
 
             var start = slots[0];
             StartPosition = CellToWorld(start.cell, start.yPos + floorBase);
@@ -467,6 +519,16 @@ namespace FiniGolf
             AddColliders(tile);
             spawnedTiles.Add(tile);
 
+            // Windmills, castles, tunnels and raised "bridge" tiles fade when they block the view.
+            if (s.def.tall || s.yPos > 0.01f)
+            {
+                var fade = tile.AddComponent<FadeableTile>();
+                fade.isStructure = s.def.tall;
+                fade.tileSize = tileScale;
+                // Grass + lane walls stay solid; only what rises above the walls fades.
+                if (fade.isStructure) fade.SplitStructure(pos.y + 0.16f * tileScale);
+            }
+
             if (s.def.windmill)
             {
                 var w = tile.AddComponent<Windmill>();
@@ -498,6 +560,7 @@ namespace FiniGolf
             {
                 var block = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 block.name = "SlidingBlock";
+                block.layer = 2; // Ignore Raycast: moving, so the pathfinder must not bake it in
                 block.transform.SetParent(tile.transform, true);
                 var size = new Vector3(0.16f, 0.1f, 0.12f) * tileScale;
                 block.transform.localScale = new Vector3(size.x / ModelScale, size.y / ModelScale, size.z / ModelScale);
@@ -516,11 +579,8 @@ namespace FiniGolf
 
             if (s.hasPickup && pickup != UpgradeType.None)
             {
-                var go = new GameObject($"Pickup_{pickup}");
-                go.transform.SetParent(courseRoot, false);
-                go.transform.position = floor + Vector3.up * 0.12f * tileScale;
-                var p = go.AddComponent<UpgradePickup>();
-                p.Build(pickup, assets, tileScale);
+                if (pickupPool == null) pickupPool = new PickupPool(transform, assets, tileScale);
+                pickupPool.Spawn(pickup, floor + Vector3.up * 0.12f * tileScale);
             }
         }
 
@@ -592,6 +652,8 @@ namespace FiniGolf
             }
 
             if (triangles.Count == 0) return;
+            int tSplits = FixTJunctions(vertices, triangles, 0.001f * tileScale);
+            if (tSplits > 0) Debug.Log($"[FiniGolf] Course collider: repaired {tSplits} T-junction seams.");
 
             var combined = new Mesh { name = "CourseCollision", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             combined.SetVertices(vertices);
@@ -612,9 +674,114 @@ namespace FiniGolf
 
             foreach (var mc in merged)
             {
+                if (mc.GetComponentInParent<FadeableTile>() != null)
+                {
+                    // Keep a non-colliding copy for camera occlusion checks.
+                    mc.gameObject.layer = OcclusionLayer;
+                    continue;
+                }
                 mc.enabled = false;
                 Destroy(mc);
             }
+        }
+
+        /// <summary>
+        /// Repairs T-junctions: where a vertex of one tile lies part-way along an edge of its neighbour
+        /// (e.g. a straight meeting a corner, or the top of a ramp), that edge can't be shared, so PhysX
+        /// treats it as a real edge and kicks the ball up. Splitting the triangle at the vertex makes both
+        /// sides share identical edges, which PhysX then ignores. Returns the number of splits made.
+        /// </summary>
+        private static int FixTJunctions(List<Vector3> verts, List<int> tris, float tolerance)
+        {
+            const float cell = 0.5f;
+            int total = 0;
+            for (int pass = 0; pass < 8; pass++)
+            {
+                var edgeUse = new Dictionary<long, int>();
+                long Key(int a, int b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+                for (int t = 0; t < tris.Count; t += 3)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        long key = Key(tris[t + k], tris[t + (k + 1) % 3]);
+                        edgeUse.TryGetValue(key, out int c);
+                        edgeUse[key] = c + 1;
+                    }
+                }
+
+                // Vertices on open (unshared) edges, hashed on a coarse grid.
+                var grid = new Dictionary<Vector3Int, List<int>>();
+                var seen = new HashSet<int>();
+                Vector3Int CellOf(Vector3 p) => new Vector3Int(Mathf.FloorToInt(p.x / cell), Mathf.FloorToInt(p.y / cell), Mathf.FloorToInt(p.z / cell));
+                for (int t = 0; t < tris.Count; t += 3)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int a = tris[t + k], b = tris[t + (k + 1) % 3];
+                        if (edgeUse[Key(a, b)] != 1) continue;
+                        foreach (int v in new[] { a, b })
+                        {
+                            if (!seen.Add(v)) continue;
+                            var c = CellOf(verts[v]);
+                            if (!grid.TryGetValue(c, out var list)) grid[c] = list = new List<int>();
+                            list.Add(v);
+                        }
+                    }
+                }
+                if (grid.Count == 0) break;
+
+                int FindInterior(int a, int b)
+                {
+                    var pa = verts[a];
+                    var pb = verts[b];
+                    var ab = pb - pa;
+                    float len2 = ab.sqrMagnitude;
+                    if (len2 < 1e-8f) return -1;
+                    var min = CellOf(Vector3.Min(pa, pb) - Vector3.one * tolerance);
+                    var max = CellOf(Vector3.Max(pa, pb) + Vector3.one * tolerance);
+                    for (int x = min.x; x <= max.x; x++)
+                    for (int y = min.y; y <= max.y; y++)
+                    for (int z = min.z; z <= max.z; z++)
+                    {
+                        if (!grid.TryGetValue(new Vector3Int(x, y, z), out var list)) continue;
+                        foreach (int v in list)
+                        {
+                            if (v == a || v == b) continue;
+                            var pv = verts[v];
+                            float t = Vector3.Dot(pv - pa, ab) / len2;
+                            if (t <= 0.001f || t >= 0.999f) continue;
+                            if ((pa + ab * t - pv).sqrMagnitude <= tolerance * tolerance) return v;
+                        }
+                    }
+                    return -1;
+                }
+
+                var result = new List<int>(tris.Count + 64);
+                int splits = 0;
+                for (int t = 0; t < tris.Count; t += 3)
+                {
+                    bool split = false;
+                    for (int k = 0; k < 3 && !split; k++)
+                    {
+                        int p0 = tris[t + k], p1 = tris[t + (k + 1) % 3], p2 = tris[t + (k + 2) % 3];
+                        if (edgeUse[Key(p0, p1)] != 1) continue;
+                        int v = FindInterior(p0, p1);
+                        if (v < 0) continue;
+                        // Same winding: (p0, v, p2) + (v, p1, p2)
+                        result.Add(p0); result.Add(v); result.Add(p2);
+                        result.Add(v); result.Add(p1); result.Add(p2);
+                        split = true;
+                        splits++;
+                    }
+                    if (!split) { result.Add(tris[t]); result.Add(tris[t + 1]); result.Add(tris[t + 2]); }
+                }
+
+                tris.Clear();
+                tris.AddRange(result);
+                total += splits;
+                if (splits == 0) break;
+            }
+            return total;
         }
 
         /// <summary>Self-avoiding random walk with backtracking. dirs[i] leads from cells[i] to cells[i+1].</summary>

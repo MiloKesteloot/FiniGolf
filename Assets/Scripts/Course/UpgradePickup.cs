@@ -67,10 +67,39 @@ namespace FiniGolf
             r.SetPropertyBlock(block);
         }
 
-        private IEnumerator Start()
+        /// <summary>Pool that owns this pickup (null = not pooled, destroy on collect).</summary>
+        public PickupPool Pool { get; set; }
+
+        private Vector3 restScale = Vector3.one;
+        private Vector3 ringRestScale = Vector3.one;
+        private bool built;
+
+        /// <summary>Resets the pickup to its fresh state and enables it at <paramref name="position"/>.</summary>
+        public void Activate(Vector3 position)
+        {
+            if (!built)
+            {
+                restScale = transform.localScale;
+                ringRestScale = ring != null ? ring.localScale : Vector3.one;
+                built = true;
+            }
+            collected = false;
+            transform.position = position;
+            transform.localScale = restScale;
+            if (ring != null) ring.localScale = ringRestScale;
+            if (visual != null) visual.localPosition = Vector3.zero;
+            gameObject.SetActive(true);
+        }
+
+        // Runs every time the pickup is (re)enabled from the pool.
+        private void OnEnable()
+        {
+            StartCoroutine(IdleRoutine());
+        }
+
+        private IEnumerator IdleRoutine()
         {
             float seed = Random.value * 6f;
-            var ringBase = ring != null ? ring.localScale : Vector3.one;
             while (!collected)
             {
                 float t = Time.time + seed;
@@ -82,7 +111,7 @@ namespace FiniGolf
                 if (ring != null)
                 {
                     float pulse = 1f + Mathf.Sin(t * 3f) * 0.12f;
-                    ring.localScale = new Vector3(ringBase.x * pulse, ringBase.y, ringBase.z * pulse);
+                    ring.localScale = new Vector3(ringRestScale.x * pulse, ringRestScale.y, ringRestScale.z * pulse);
                 }
                 yield return null;
             }
@@ -112,7 +141,9 @@ namespace FiniGolf
                 transform.position += Vector3.up * Time.deltaTime * 0.8f;
                 yield return null;
             }
-            Destroy(gameObject);
+            // Back to the pool for the next hole instead of being destroyed.
+            if (Pool != null) Pool.Release(this);
+            else Destroy(gameObject);
         }
     }
 }

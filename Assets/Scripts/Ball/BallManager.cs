@@ -28,9 +28,9 @@ namespace FiniGolf
 
         [Header("Walls")]
         [Tooltip("Fraction of the speed into the wall that is kept after bouncing (1 = perfectly elastic).")]
-        [Range(0f, 1f)] public float wallBounciness = 0.95f;
-        [Tooltip("Upward hops smaller than this (m/s) on flat ground are cancelled, so seams never kick the ball.")]
-        public float seamHopFilter = 0.9f;
+        [Range(0f, 1f)] public float wallBounciness = 0.9f;
+        [Tooltip("While rolling, any hop off the surface slower than this (m/s) is cancelled, so seams never kick the ball. Landings from the air still bounce.")]
+        public float seamHopFilter = 3f;
 
         [Header("Resting")]
         public float restSpeed = 0.1f;
@@ -55,6 +55,7 @@ namespace FiniGolf
         private GameObject golfVisual;
         private GameObject beachVisual;
         private AimArrow arrow;
+        private BallFX fx;
         private PhysicsMaterial physicsMaterial;
         private BallProfile profile = BallProfile.Default;
         private float baseRadius = 0.07f;
@@ -63,6 +64,10 @@ namespace FiniGolf
         private float rollTimer;
         private Vector3 aimDirection = Vector3.forward;
         private Vector3 preStepVelocity;
+        private bool wasGrounded;
+        // Speed right after the last wall bounce; nothing may push the ball faster than this shortly after.
+        private float bounceSpeedCap;
+        private int bounceCapSteps;
         private float lastWallBounceTime = -1f;
         private Coroutine resizeRoutine;
 
@@ -75,6 +80,8 @@ namespace FiniGolf
 
             Physics.defaultContactOffset = 0.004f;
             Physics.bounceThreshold = 0.6f;
+            // 100 Hz physics: at full power the ball moved ~16 cm (more than its diameter) per 50 Hz step.
+            Time.fixedDeltaTime = 0.01f;
             if (cam == null) cam = Camera.main;
             EnsureBall();
         }
@@ -94,6 +101,7 @@ namespace FiniGolf
             baseRadius = 0.035f * s;
 
             var go = new GameObject("Ball");
+            go.layer = 2; // Ignore Raycast: keeps the ball out of pathfinding samples
             root = go.transform;
 
             Body = go.AddComponent<Rigidbody>();
@@ -103,6 +111,8 @@ namespace FiniGolf
             Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             Body.maxAngularVelocity = 150f;
             Body.sleepThreshold = 0.0001f;
+            // Never let PhysX pop the ball out of an overlap at high speed (this is what launched it over walls).
+            Body.maxDepenetrationVelocity = 0.4f;
             Body.isKinematic = true;
 
             physicsMaterial = new PhysicsMaterial("BallPhysics")
@@ -119,24 +129,27 @@ namespace FiniGolf
             sphere.sharedMaterial = physicsMaterial;
 
             go.AddComponent<BallContact>();
+            fx = go.AddComponent<BallFX>();
+            fx.Init(this, assets, s);
+            var visualParent = fx.Spinner;
 
             if (assets != null)
             {
-                golfVisual = assets.Spawn("ball-red", root, root.position, Quaternion.identity, Vector3.one * modelScale);
+                golfVisual = assets.Spawn("ball-red", visualParent, root.position, Quaternion.identity, Vector3.one * modelScale);
                 golfVisual.name = "GolfBallVisual";
             }
             else
             {
                 golfVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 Destroy(golfVisual.GetComponent<Collider>());
-                golfVisual.transform.SetParent(root, false);
+                golfVisual.transform.SetParent(visualParent, false);
                 golfVisual.transform.localScale = Vector3.one * baseRadius * 2f;
             }
 
             beachVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             beachVisual.name = "BeachBallVisual";
             Destroy(beachVisual.GetComponent<Collider>());
-            beachVisual.transform.SetParent(root, false);
+            beachVisual.transform.SetParent(visualParent, false);
             beachVisual.transform.localScale = Vector3.one * baseRadius * 2f;
             if (assets != null && assets.beachBallMaterial != null)
                 beachVisual.GetComponent<Renderer>().sharedMaterial = assets.beachBallMaterial;
@@ -164,6 +177,7 @@ namespace FiniGolf
             Body.position = p;
             restTimer = rollTimer = 0f;
             arrow.Hide();
+            fx.ResetFX();
             State = BallState.Ready;
         }
 
@@ -189,6 +203,7 @@ namespace FiniGolf
 
             if (golfVisual != null) golfVisual.SetActive(!profile.beachBallVisual);
             beachVisual.SetActive(profile.beachBallVisual);
+            fx.SetBeachBall(profile.beachBallVisual);
 
             if (resizeRoutine != null) StopCoroutine(resizeRoutine);
             if (root.gameObject.activeInHierarchy)
@@ -272,11 +287,14 @@ namespace FiniGolf
             {
                 float s = TileScale;
                 var origin = Body.position + Vector3.down * (Radius - 0.012f * s);
-                arrow.Show(origin, aimDirection, Radius * 1.4f, Mathf.Lerp(0.12f, 1.1f, AimPower) * s, AimPower);
+                // Base of the arrow sits directly under the ball.
+                arrow.Show(origin, aimDirection, 0f, Radius + Mathf.Lerp(0.12f, 1.1f, AimPower) * s, AimPower);
+                fx.Charge(-aimDirection, AimPower);
             }
             else
             {
                 arrow.Hide();
+                fx.CancelCharge();
             }
 
             if (pointer.press.wasReleasedThisFrame || !pointer.press.isPressed)
@@ -316,6 +334,7 @@ namespace FiniGolf
         private void CancelAim()
         {
             arrow.Hide();
+            if (fx != null) fx.CancelCharge();
             AimPower = 0f;
             LastAimCancelFrame = Time.frameCount;
             if (State == BallState.Aiming) State = BallState.Ready;
@@ -327,6 +346,7 @@ namespace FiniGolf
             float speed = Mathf.Lerp(minShotSpeed, maxShotSpeed, AimPower) * profile.powerMultiplier * (TileScale / 2f);
 
             GameManager.Instance?.RegisterShot();
+            if (PathGuide.Instance != null) PathGuide.Instance.Hide();
             Sfx.Instance?.Hit(AimPower);
 
             Body.isKinematic = false;
@@ -335,8 +355,10 @@ namespace FiniGolf
             Body.angularVelocity = RollingSpin(aimDirection * speed);
             preStepVelocity = Body.linearVelocity;
             Body.WakeUp();
+            fx.Launch(aimDirection, AimPower, Body.position + Vector3.down * Radius);
 
             restTimer = rollTimer = 0f;
+            wasGrounded = false;
             State = BallState.Moving;
         }
 
@@ -356,6 +378,23 @@ namespace FiniGolf
             Body.AddForce(Physics.gravity * profile.gravityScale, ForceMode.Acceleration);
             if (State != BallState.Moving) return;
 
+            // A wall bounce must never leave the ball faster than it arrived.
+            if (bounceCapSteps > 0)
+            {
+                bounceCapSteps--;
+                var cur = Body.linearVelocity;
+                var curH = new Vector3(cur.x, 0f, cur.z);
+                float curSpeed = curH.magnitude;
+                if (curSpeed > bounceSpeedCap && curSpeed > 0.001f)
+                {
+                    curH *= bounceSpeedCap / curSpeed;
+                    Body.linearVelocity = new Vector3(curH.x, Mathf.Min(cur.y, 0f), curH.z);
+                    Body.angularVelocity = RollingSpin(curH);
+                }
+            }
+
+            PredictWallBounce(Time.fixedDeltaTime);
+
             var course = CourseManager.Instance;
             float s = TileScale;
             float dt = Time.fixedDeltaTime;
@@ -365,12 +404,25 @@ namespace FiniGolf
 
             bool grounded = Physics.Raycast(pos, Vector3.down, out var groundHit, Radius + 0.025f * s, ~0, QueryTriggerInteraction.Ignore);
 
-            // Safety net against seam "ghost bumps": on flat ground, small upward hops are just noise.
-            if (grounded && !profile.beachBallVisual && groundHit.normal.y > 0.985f && v.y > 0f && v.y < seamHopFilter)
+            // Safety net against seam "ghost bumps": if the ball was already rolling on the surface last step,
+            // it has no business leaving it now, so cancel motion away from the real face under it
+            // (works on ramps and hills too). A ball landing from the air is not affected.
+            if (grounded && wasGrounded && !profile.beachBallVisual)
             {
-                v.y = 0f;
-                Body.linearVelocity = v;
+                var n = groundHit.normal;
+                float away = Vector3.Dot(v, n);
+                if (away > 0.02f && away < seamHopFilter)
+                {
+                    v -= n * away;
+                    Body.linearVelocity = v;
+                }
             }
+            wasGrounded = grounded;
+
+            // Keep the ball purely rolling on the ground: no side-spin or yaw spin left over from wall contacts.
+            if (grounded)
+                Body.angularVelocity = Vector3.Lerp(Body.angularVelocity, RollingSpin(v), 0.4f);
+            fx.Roll(v, grounded, grounded ? groundHit.point : pos + Vector3.down * Radius, dt);
 
             // Rolling resistance (PhysX spheres would otherwise roll forever).
             var vh = new Vector3(v.x, 0f, v.z);
@@ -423,6 +475,7 @@ namespace FiniGolf
 
         private void Stop()
         {
+            fx.StopRolling();
             Body.linearVelocity = Vector3.zero;
             Body.angularVelocity = Vector3.zero;
             Body.isKinematic = true;
@@ -433,6 +486,7 @@ namespace FiniGolf
         private IEnumerator SinkRoutine()
         {
             State = BallState.Sinking;
+            fx.StopRolling();
             Body.linearVelocity = Vector3.zero;
             Body.angularVelocity = Vector3.zero;
             Body.isKinematic = true;
@@ -460,51 +514,106 @@ namespace FiniGolf
             GameManager.Instance?.NotifyHoleSunk();
         }
 
-        public void OnBallCollision(Collision collision)
+        /// <summary>
+        /// Called on collision Enter AND Stay. The whole course is one merged collider that the ball is
+        /// always touching through the floor, so wall hits usually arrive as "Stay" contacts.
+        /// </summary>
+        public void OnBallCollision(Collision collision, bool entered)
         {
             if (State != BallState.Moving || collision.contactCount == 0) return;
-            float impact = collision.relativeVelocity.magnitude;
 
-            var normal = Vector3.zero;
-            for (int i = 0; i < collision.contactCount; i++) normal += collision.GetContact(i).normal;
-            normal.Normalize();
+            // Find the wall contact (mostly horizontal normal) we are driving into hardest.
+            var vh = new Vector3(preStepVelocity.x, 0f, preStepVelocity.z);
+            float bestInto = -0.05f;
+            Vector3 bestNormal = Vector3.zero, bestPoint = Vector3.zero;
+            bool floorImpact = false;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                var c = collision.GetContact(i);
+                if (Mathf.Abs(c.normal.y) >= 0.5f) { floorImpact = true; continue; }
+                // Wall normal from the contact toward the ball centre (independent of Unity's normal convention).
+                var n = Body.position - c.point;
+                n.y = 0f;
+                if (n.sqrMagnitude < 1e-8f) n = new Vector3(c.normal.x, 0f, c.normal.z);
+                n.Normalize();
+                float into = Vector3.Dot(vh, n);
+                if (into < bestInto) { bestInto = into; bestNormal = n; bestPoint = c.point; }
+            }
 
-            bool isWall = Mathf.Abs(normal.y) < 0.5f;
             // Static walls get an arcade bounce; moving hazards are left to PhysX.
-            if (isWall && collision.rigidbody == null)
-                BounceOffWall(normal);
+            if (bestNormal != Vector3.zero && collision.rigidbody == null)
+                BounceOffWall(bestNormal, bestPoint, -bestInto);
+            else if (bestNormal != Vector3.zero && entered)
+                Sfx.Instance?.Wall(Mathf.Clamp01(-bestInto / 6f));
 
-            if (isWall && impact > 0.5f)
-                Sfx.Instance?.Wall(Mathf.Clamp01(impact / 6f));
-            else if (impact > 1.6f)
-                Sfx.Instance?.Bounce(Mathf.Clamp01(impact / 8f));
+            if (entered && floorImpact && collision.relativeVelocity.magnitude > 1.6f)
+                Sfx.Instance?.Bounce(Mathf.Clamp01(collision.relativeVelocity.magnitude / 8f));
         }
 
         /// <summary>
         /// Reflects the pre-impact velocity off the wall, keeping almost all of the speed
-        /// (PhysX friction + restitution would otherwise kill most of it), and keeps the ball rolling.
+        /// (PhysX friction + restitution would otherwise kill most of it), with no added spin.
         /// </summary>
-        private void BounceOffWall(Vector3 contactNormal)
+        private static int WallMask => Physics.DefaultRaycastLayers & ~(1 << CourseManager.OcclusionLayer);
+
+        /// <summary>
+        /// Sweeps the ball along this step's motion. If it would reach a wall, it is moved onto the wall
+        /// surface and bounced *before* PhysX ever sees a high-speed overlap with the wall.
+        /// Floors, ramps and bumps (non-vertical surfaces) are ignored; moving hazards (Ignore Raycast layer)
+        /// are left to PhysX.
+        /// </summary>
+        private void PredictWallBounce(float dt)
+        {
+            var v = Body.linearVelocity;
+            var vh = new Vector3(v.x, 0f, v.z);
+            float speed = vh.magnitude;
+            if (speed < 0.3f) return;
+
+            var dir = vh / speed;
+            float reach = speed * dt * 1.5f + 0.005f * TileScale;
+            var start = Body.position;
+            if (!Physics.SphereCast(start, Radius * 0.95f, dir, out var hit, reach, WallMask, QueryTriggerInteraction.Ignore))
+                return;
+            if (Mathf.Abs(hit.normal.y) > 0.5f) return; // floor / ramp / bump, not a wall
+
+            var centreAtHit = start + dir * hit.distance;
+            var n = centreAtHit - hit.point;
+            n.y = 0f;
+            if (n.sqrMagnitude < 1e-8f) return;
+            n.Normalize();
+            float into = Vector3.Dot(vh, n);
+            if (into > -0.05f) return;
+
+            // Touch the wall, then bounce.
+            // The sweep used a slightly smaller sphere, so back the real ball off until it just touches
+            // (otherwise it starts inside the wall and PhysX pushes it out = free extra speed).
+            var touch = centreAtHit + n * (Radius * 0.05f + 0.002f);
+            Body.position = touch;
+            preStepVelocity = v;
+            BounceOffWall(n, hit.point, -into);
+        }
+
+        private void BounceOffWall(Vector3 n, Vector3 point, float intoSpeed)
         {
             if (Mathf.Approximately(lastWallBounceTime, Time.fixedTime)) return;
-
-            var n = new Vector3(contactNormal.x, 0f, contactNormal.z);
-            if (n.sqrMagnitude < 1e-4f) return;
-            n.Normalize();
+            lastWallBounceTime = Time.fixedTime;
 
             var v = preStepVelocity;
             var vh = new Vector3(v.x, 0f, v.z);
-            float into = Vector3.Dot(vh, n);
-            if (into > 0f) { n = -n; into = -into; } // make n face the ball, whatever Unity's convention
-            if (into > -0.05f) return;               // grazing / already moving away
-
-            lastWallBounceTime = Time.fixedTime;
+            float into = Vector3.Dot(vh, n); // negative: moving into the wall
             var tangential = vh - into * n;
             var bounced = tangential - into * wallBounciness * n;
             float vy = Mathf.Min(Body.linearVelocity.y, Mathf.Max(v.y, 0f));
             Body.linearVelocity = new Vector3(bounced.x, vy, bounced.z);
             Body.angularVelocity = RollingSpin(bounced);
             preStepVelocity = Body.linearVelocity;
+
+            bounceSpeedCap = bounced.magnitude;
+            bounceCapSteps = 6;
+
+            float strength = Mathf.Clamp01(intoSpeed / (6f * TileScale / 2f));
+            Sfx.Instance?.Wall(strength);
+            if (intoSpeed > 0.25f) fx.WallHit(point, n, strength);
         }
 
         private Vector3 RollingSpin(Vector3 velocity)

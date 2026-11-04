@@ -141,6 +141,8 @@ namespace FiniGolf.EditorTools
             }
         }
 
+        private static Sprite KnobSprite => AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
         private static Shader LitShader => Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
         private static Shader UnlitShader => Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
 
@@ -208,6 +210,19 @@ namespace FiniGolf.EditorTools
                 m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             });
 
+            var particles = Shader.Find(MaterialUtil.ParticlesUnlit) ?? UnlitShader;
+            var pathMat = MakeMaterial("PathLine", particles, m =>
+            {
+                if (particles.name == MaterialUtil.ParticlesUnlit) MaterialUtil.SetupTransparent(m);
+                SetColor(m, Color.white);
+            });
+
+            var fadedTileMat = MakeMaterial("KenneyColormapFaded", LitShader, m =>
+            {
+                m.CopyPropertiesFromMaterial(tileMat);
+                MaterialUtil.SetupTransparentLit(m);
+            });
+
             var path = DataFolder + "/GameAssets.asset";
             var ga = AssetDatabase.LoadAssetAtPath<GameAssets>(path);
             if (ga == null)
@@ -231,6 +246,8 @@ namespace FiniGolf.EditorTools
             ga.beachBallMaterial = beachMat;
             ga.hazardMaterial = hazardMat;
             ga.pickupMaterial = pickupMat;
+            ga.pathMaterial = pathMat;
+            ga.fadedTileMaterial = fadedTileMat;
             ga.heartSprite = heart;
             ga.panelSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             EditorUtility.SetDirty(ga);
@@ -498,17 +515,30 @@ namespace FiniGolf.EditorTools
             menu.title = titleRoot;
 
             // Main panel with buttons
-            var main = UIFactory.Rect("Main Panel", canvas.transform).At(new Vector2(0f, 0.5f), new Vector2(90f, -80f), new Vector2(520f, 520f));
+            var main = UIFactory.Rect("Main Panel", canvas.transform).At(new Vector2(0f, 0.5f), new Vector2(90f, -110f), new Vector2(520f, 600f));
             menu.mainPanel = main.gameObject;
-            var size = new Vector2(440f, 100f);
+            var size = new Vector2(440f, 96f);
             menu.playButton = UIFactory.Button("Play", main, "PLAY", UIFactory.Green, panelSprite, size, 50);
             menu.playButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, 0f), size);
+            menu.optionsButton = UIFactory.Button("Options", main, "OPTIONS", UIFactory.Blue, panelSprite, size, 40);
+            menu.optionsButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, -120f), size);
             menu.creditsButton = UIFactory.Button("Credits", main, "CREDITS", UIFactory.Blue, panelSprite, size, 40);
-            menu.creditsButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, -130f), size);
+            menu.creditsButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, -240f), size);
             menu.quitButton = UIFactory.Button("Quit", main, "QUIT", new Color(0.35f, 0.38f, 0.5f), panelSprite, size, 40);
-            menu.quitButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, -260f), size);
+            menu.quitButton.GetComponent<RectTransform>().At(new Vector2(0f, 1f), new Vector2(0f, -360f), size);
             menu.bestText = UIFactory.Text("Best", main, "", 30, UIFactory.TextDim, TextAnchor.UpperLeft, FontStyle.Bold);
-            menu.bestText.rectTransform.At(new Vector2(0f, 1f), new Vector2(6f, -390f), new Vector2(520f, 60f));
+            menu.bestText.rectTransform.At(new Vector2(0f, 1f), new Vector2(6f, -480f), new Vector2(520f, 60f));
+
+            // Options panel
+            var options = UIFactory.Image("Options Panel", canvas.transform, UIFactory.PanelSolid, panelSprite);
+            options.rectTransform.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820f, 460f));
+            menu.optionsPanel = options.gameObject;
+            var oTitle = UIFactory.Text("Title", options.transform, "OPTIONS", 72, UIFactory.Accent);
+            oTitle.rectTransform.At(new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(760f, 100f));
+            var oVolume = UIFactory.VolumeRow(options.transform, new Vector2(660f, 110f), panelSprite, KnobSprite);
+            oVolume.At(new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(660f, 110f));
+            menu.optionsBackButton = UIFactory.Button("Back", options.transform, "BACK", UIFactory.Green, panelSprite, new Vector2(300f, 90f), 40);
+            menu.optionsBackButton.GetComponent<RectTransform>().At(new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(300f, 90f));
 
             // Credits panel
             var credits = UIFactory.Image("Credits Panel", canvas.transform, UIFactory.PanelSolid, panelSprite);
@@ -670,14 +700,16 @@ namespace FiniGolf.EditorTools
             pause.rectTransform.Stretch();
             hud.pausePanel = pause.gameObject;
             var pCard = UIFactory.Image("Card", pause.transform, UIFactory.PanelSolid, sprite);
-            pCard.rectTransform.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 470f));
+            pCard.rectTransform.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640f, 600f));
             var pTitle = UIFactory.Text("Title", pCard.transform, "PAUSED", 86, Color.white);
             pTitle.rectTransform.At(new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(560f, 120f));
             var pSize = new Vector2(400f, 96f);
             hud.resumeButton = UIFactory.Button("Resume", pCard.transform, "RESUME", UIFactory.Green, sprite, pSize, 40);
-            hud.resumeButton.GetComponent<RectTransform>().At(new Vector2(0.5f, 0.5f), new Vector2(0f, -30f), pSize);
+            hud.resumeButton.GetComponent<RectTransform>().At(new Vector2(0.5f, 0f), new Vector2(0f, 156f), pSize);
             hud.pauseMenuButton = UIFactory.Button("Menu", pCard.transform, "MAIN MENU", UIFactory.Blue, sprite, pSize, 40);
-            hud.pauseMenuButton.GetComponent<RectTransform>().At(new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), pSize);
+            hud.pauseMenuButton.GetComponent<RectTransform>().At(new Vector2(0.5f, 0f), new Vector2(0f, 40f), pSize);
+            var pVolume = UIFactory.VolumeRow(pCard.transform, new Vector2(520f, 110f), sprite, KnobSprite);
+            pVolume.At(new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(520f, 110f));
         }
 
         private static Text ScoreColumn(Transform parent, string label, float x)

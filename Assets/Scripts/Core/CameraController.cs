@@ -24,6 +24,12 @@ namespace FiniGolf
 
         public bool FollowTarget { get; set; } = true;
 
+        protected override void Awake()
+        {
+            base.Awake();
+            if (GetComponent<OcclusionFader>() == null) gameObject.AddComponent<OcclusionFader>();
+        }
+
         private Vector3 focus;
         private Vector3 focusVelocity;
         private bool scripted;

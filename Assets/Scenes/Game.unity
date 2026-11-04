@@ -493,8 +493,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FiniGolf.GameManager
   persistAcrossScenes: 0
   startingHearts: 3
-  upgradeChance: 0.25
-  upgradePityHoles: 6
+  upgradeChance: 0.4
+  upgradePityHoles: 2
   holeCompleteDelay: 2.6
 --- !u!4 &351893132
 Transform:

@@ -7,7 +7,12 @@ namespace FiniGolf
     {
         private void OnCollisionEnter(Collision collision)
         {
-            if (BallManager.Instance != null) BallManager.Instance.OnBallCollision(collision);
+            if (BallManager.Instance != null) BallManager.Instance.OnBallCollision(collision, true);
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            if (BallManager.Instance != null) BallManager.Instance.OnBallCollision(collision, false);
         }
     }
 }

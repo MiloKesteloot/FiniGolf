@@ -10,10 +10,13 @@ namespace FiniGolf
     {
         public GameObject mainPanel;
         public GameObject creditsPanel;
+        public GameObject optionsPanel;
         public Button playButton;
+        public Button optionsButton;
         public Button creditsButton;
         public Button quitButton;
         public Button backButton;
+        public Button optionsBackButton;
         public Text bestText;
         public RectTransform title;
 
@@ -23,21 +26,24 @@ namespace FiniGolf
         {
             Time.timeScale = 1f;
             if (playButton != null) playButton.onClick.AddListener(Play);
-            if (creditsButton != null) creditsButton.onClick.AddListener(() => ShowCredits(true));
-            if (backButton != null) backButton.onClick.AddListener(() => ShowCredits(false));
+            if (creditsButton != null) creditsButton.onClick.AddListener(() => ShowPanel(creditsPanel));
+            if (optionsButton != null) optionsButton.onClick.AddListener(() => ShowPanel(optionsPanel));
+            if (backButton != null) backButton.onClick.AddListener(() => ShowPanel(mainPanel));
+            if (optionsBackButton != null) optionsBackButton.onClick.AddListener(() => ShowPanel(mainPanel));
             if (quitButton != null) quitButton.onClick.AddListener(Quit);
 
             int best = PlayerPrefs.GetInt(GameManager.BestHolesKey, 0);
             if (bestText != null) bestText.text = best > 0 ? $"Best run: {best} hole{(best == 1 ? "" : "s")}" : "Sink as many holes as you can!";
 
-            ShowCredits(false);
+            ShowPanel(mainPanel);
             if (title != null) StartCoroutine(BobTitle());
         }
 
-        private void ShowCredits(bool show)
+        private void ShowPanel(GameObject panel)
         {
-            if (mainPanel != null) mainPanel.SetActive(!show);
-            if (creditsPanel != null) creditsPanel.SetActive(show);
+            if (mainPanel != null) mainPanel.SetActive(panel == mainPanel);
+            if (creditsPanel != null) creditsPanel.SetActive(panel == creditsPanel);
+            if (optionsPanel != null) optionsPanel.SetActive(panel == optionsPanel);
         }
 
         private void Play()
