@@ -1,3 +1,4 @@
+// This file and every function within was written by Claude Opus 5.5
 using UnityEngine;
 
 namespace FiniGolf
