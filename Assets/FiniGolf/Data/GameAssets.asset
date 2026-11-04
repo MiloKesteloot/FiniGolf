@@ -1,0 +1,274 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b8f5aea009286429e19d9cfc2f08ca, type: 3}
+  m_Name: GameAssets
+  m_EditorClassIdentifier: Assembly-CSharp::FiniGolf.GameAssets
+  models:
+  - name: ball-blue
+    model: {fileID: 919132149155446097, guid: 9a122c739ba39a94795d40926254781f, type: 3}
+  - name: ball-green
+    model: {fileID: 919132149155446097, guid: 7fad9a9a17fce00438c4be8d6f190e00, type: 3}
+  - name: ball-red
+    model: {fileID: 919132149155446097, guid: 8c054e45b48223647a7e811924225d4f, type: 3}
+  - name: block
+    model: {fileID: 919132149155446097, guid: ebe9752f354de6f4095089b06b454e93, type: 3}
+  - name: block-borders
+    model: {fileID: 919132149155446097, guid: 479943c2b0d83e44183a2e8c1c66a92a, type: 3}
+  - name: bump
+    model: {fileID: 919132149155446097, guid: a8eeeeb3b6ebd274ca8424667ffa211f, type: 3}
+  - name: bump-down
+    model: {fileID: 919132149155446097, guid: ce64b9a3f3960c34ba05cf8796ea20b1, type: 3}
+  - name: bump-down-walls
+    model: {fileID: 919132149155446097, guid: b1262e4a49317994a9ae6ffb4fa19680, type: 3}
+  - name: bump-walls
+    model: {fileID: 919132149155446097, guid: b5f673148dce8aa47b2cc3269ab24a9a, type: 3}
+  - name: castle
+    model: {fileID: 919132149155446097, guid: de6589ae18e51f943bd3ced40357b05c, type: 3}
+  - name: club-blue
+    model: {fileID: 919132149155446097, guid: 637b11eb2c576ef4c9e57499c709d7bd, type: 3}
+  - name: club-green
+    model: {fileID: 919132149155446097, guid: 5e48a7dc01091a141b96f8ed3d74e4d4, type: 3}
+  - name: club-red
+    model: {fileID: 919132149155446097, guid: 0a5b5fefcf21b87419f02d67f865f64d, type: 3}
+  - name: corner
+    model: {fileID: 919132149155446097, guid: 70dccfc29fef6d243bee19f5e069ad95, type: 3}
+  - name: crest
+    model: {fileID: 919132149155446097, guid: bcd5b00c123b0b34eb9c1815f75efb02, type: 3}
+  - name: end
+    model: {fileID: 919132149155446097, guid: cc67767b53ea03c4c86448ab8c082273, type: 3}
+  - name: flag-blue
+    model: {fileID: 919132149155446097, guid: 8b3ff3c87773f104ca86422cab5f268e, type: 3}
+  - name: flag-green
+    model: {fileID: 919132149155446097, guid: 0fc68425c47a41245ae4c9b1b4ade87b, type: 3}
+  - name: flag-large-blue
+    model: {fileID: 919132149155446097, guid: 0dbcb24b3720fcf468313e9d4fdf43c3, type: 3}
+  - name: flag-large-green
+    model: {fileID: 919132149155446097, guid: 2cf10edb9d1afe943bc86a5e84893f43, type: 3}
+  - name: flag-large-red
+    model: {fileID: 919132149155446097, guid: 18fb5d555b344514898e1dede8c78062, type: 3}
+  - name: flag-red
+    model: {fileID: 919132149155446097, guid: cf7e419509f67f24b84a7834d0519642, type: 3}
+  - name: gap
+    model: {fileID: 919132149155446097, guid: 7e18e4d227550584c9dc23fe1e55f331, type: 3}
+  - name: hill-corner
+    model: {fileID: 919132149155446097, guid: b4b59110c01341d4db4d618d6d7415f4, type: 3}
+  - name: hill-round
+    model: {fileID: 919132149155446097, guid: 9158b25cb2f195b4c9413879649908d8, type: 3}
+  - name: hill-square
+    model: {fileID: 919132149155446097, guid: 2037e9972f4cd034ab922fe98a056eff, type: 3}
+  - name: hole-open
+    model: {fileID: 919132149155446097, guid: f72e9ae9169b1d544b64de736156614c, type: 3}
+  - name: hole-round
+    model: {fileID: 919132149155446097, guid: ff6adba821459384a9bcdb6941620818, type: 3}
+  - name: hole-square
+    model: {fileID: 919132149155446097, guid: 53f83420c5c5b4c42ae4c8d4d80fb4b8, type: 3}
+  - name: inner-corner
+    model: {fileID: 919132149155446097, guid: baec4d92e1803b64d85a35a5ff12538d, type: 3}
+  - name: narrow-block
+    model: {fileID: 919132149155446097, guid: 4ff13a3b463d80f4e974ebb0f1d42540, type: 3}
+  - name: narrow-round
+    model: {fileID: 919132149155446097, guid: 7350fe77e3c6ab04491a71a75fb9d11b, type: 3}
+  - name: narrow-square
+    model: {fileID: 919132149155446097, guid: de136229e96ddc04993617c9b00e2fae, type: 3}
+  - name: obstacle-block
+    model: {fileID: 919132149155446097, guid: 0cde30d7964ea0a47ac3f6d46cff34f3, type: 3}
+  - name: obstacle-diamond
+    model: {fileID: 919132149155446097, guid: 682b8aea3e0715848b038d69c42e3503, type: 3}
+  - name: obstacle-triangle
+    model: {fileID: 919132149155446097, guid: c7be620579c85474dac386c7163057ec, type: 3}
+  - name: open
+    model: {fileID: 919132149155446097, guid: b53a980bb4b4b1a49a9701a09519ce33, type: 3}
+  - name: ramp
+    model: {fileID: 919132149155446097, guid: f8bf742904fabe9449dbacaa839816b8, type: 3}
+  - name: ramp-high
+    model: {fileID: 919132149155446097, guid: 37e7c32a0a529444799909b689046668, type: 3}
+  - name: ramp-large
+    model: {fileID: 919132149155446097, guid: b19342ae5665ecf4f8e23e4f8f0c232c, type: 3}
+  - name: ramp-large-side
+    model: {fileID: 919132149155446097, guid: bf252ff2876b1f24bb931d13a49356ca, type: 3}
+  - name: ramp-low
+    model: {fileID: 919132149155446097, guid: fa3bc2b58df76ee468a6be721187ec3d, type: 3}
+  - name: ramp-medium
+    model: {fileID: 919132149155446097, guid: acb7217afba63d643850855e850fa32c, type: 3}
+  - name: ramp-sharp
+    model: {fileID: 919132149155446097, guid: 2b02a74d5b601614eb83f7b80c39e66d, type: 3}
+  - name: ramp-side
+    model: {fileID: 919132149155446097, guid: 28bfa604d4d618b45927e663d73b4fd0, type: 3}
+  - name: ramp-square
+    model: {fileID: 919132149155446097, guid: 37719c54b34b46545b7387246b2eabbf, type: 3}
+  - name: round-corner-a
+    model: {fileID: 919132149155446097, guid: b92cef06cf1a1374bbc4dd5b5a61ba93, type: 3}
+  - name: round-corner-b
+    model: {fileID: 919132149155446097, guid: db968a4b02ea1994d9f72d90f70c3d5c, type: 3}
+  - name: round-corner-c
+    model: {fileID: 919132149155446097, guid: e696f49ce4d9e9d49a6fa903bd6f1e21, type: 3}
+  - name: round-large-corner
+    model: {fileID: 919132149155446097, guid: 3406e1056f4db1743a3a2460b4acf077, type: 3}
+  - name: round-large-corner-open
+    model: {fileID: 919132149155446097, guid: cc02673d4b49b764d9f088af781c0b08, type: 3}
+  - name: side
+    model: {fileID: 919132149155446097, guid: 0777612b2c8a1f042b01baff2e2f96da, type: 3}
+  - name: skew-corner
+    model: {fileID: 919132149155446097, guid: 535fc191ef7fb5146ba5922ad67668b3, type: 3}
+  - name: skew-large-corner
+    model: {fileID: 919132149155446097, guid: afa1c9ba2fe29044d918a866ac9d0fd0, type: 3}
+  - name: skew-large-corner-open
+    model: {fileID: 919132149155446097, guid: 367ac6d396f934b4db5baba6d6a2f02d, type: 3}
+  - name: spline-concave
+    model: {fileID: 919132149155446097, guid: 3aa24659463bdc246925883b86bc581b, type: 3}
+  - name: spline-concave-cap-back
+    model: {fileID: 919132149155446097, guid: 21b43c22500ae13479a28429a40f92ab, type: 3}
+  - name: spline-concave-cap-front
+    model: {fileID: 919132149155446097, guid: e508fdb537957b74183e643d432aad29, type: 3}
+  - name: spline-concave-corner-large
+    model: {fileID: 919132149155446097, guid: ebe6cb23f9717d24b9d1982b38f2d0a4, type: 3}
+  - name: spline-concave-corner-large-ramp
+    model: {fileID: 919132149155446097, guid: ff21835a5449ab74689ed2c9b7ff82e8, type: 3}
+  - name: spline-concave-corner-small
+    model: {fileID: 919132149155446097, guid: 154229e07dc53dd419421175b0139f97, type: 3}
+  - name: spline-concave-corner-small-ramp
+    model: {fileID: 919132149155446097, guid: e581c4d798b324545b1b41467ad0498a, type: 3}
+  - name: spline-concave-curve
+    model: {fileID: 919132149155446097, guid: 71b2c5781a3a4c649aed9bf938fc828e, type: 3}
+  - name: spline-concave-looping
+    model: {fileID: 919132149155446097, guid: 39fe689a8adae3a4884c3b09d1857ed0, type: 3}
+  - name: spline-concave-straight
+    model: {fileID: 919132149155446097, guid: 9e8ce9937d4260b49bd1dff9c180f714, type: 3}
+  - name: spline-concave-straight-bend
+    model: {fileID: 919132149155446097, guid: 393d6fa2671412a48b121a10d49ac1e0, type: 3}
+  - name: spline-concave-straight-bend-large
+    model: {fileID: 919132149155446097, guid: ed61ff42f8d2d2e449eee374ea3a832a, type: 3}
+  - name: spline-concave-straight-bump-down
+    model: {fileID: 919132149155446097, guid: ed59e69ba16ab1241bad650733e94852, type: 3}
+  - name: spline-concave-straight-bump-up
+    model: {fileID: 919132149155446097, guid: 39b156d46891c05438925d3815f154af, type: 3}
+  - name: spline-concave-straight-hill-beginning
+    model: {fileID: 919132149155446097, guid: a4784070fa97f1d48acaf1542a00d8f8, type: 3}
+  - name: spline-concave-straight-hill-complete
+    model: {fileID: 919132149155446097, guid: b6dd9a49ff1344447a7dd58fa365be84, type: 3}
+  - name: spline-concave-straight-hill-complete-half
+    model: {fileID: 919132149155446097, guid: ae99c1aac1b070049b7ff6d7ec3d46ed, type: 3}
+  - name: spline-concave-straight-hill-end
+    model: {fileID: 919132149155446097, guid: fb39d59dc3cfb8f43ab90109cc842da5, type: 3}
+  - name: spline-concave-straight-skew-left
+    model: {fileID: 919132149155446097, guid: f89d89c9d5bc7be4c86a0807ab38c705, type: 3}
+  - name: spline-concave-straight-skew-left-side
+    model: {fileID: 919132149155446097, guid: 96b5d518beaab1b43a2b37ea41609f2c, type: 3}
+  - name: spline-concave-straight-skew-right
+    model: {fileID: 919132149155446097, guid: 0f87d51d7e33385449b77712714bb9f0, type: 3}
+  - name: spline-concave-straight-skew-right-side
+    model: {fileID: 919132149155446097, guid: f0013869826d48047ae9e27b0521567e, type: 3}
+  - name: spline-default
+    model: {fileID: 919132149155446097, guid: 5f1a3607113d5a14b9081103cc8f926a, type: 3}
+  - name: spline-default-cap-back
+    model: {fileID: 919132149155446097, guid: 72d4bce8eb4b90447a565cb76c1b154a, type: 3}
+  - name: spline-default-cap-front
+    model: {fileID: 919132149155446097, guid: b7df5e128fb84d447b0a3bb289fcce70, type: 3}
+  - name: spline-default-corner-large
+    model: {fileID: 919132149155446097, guid: c79d01ebdaac0064dae0421cc2a17a50, type: 3}
+  - name: spline-default-corner-large-ramp
+    model: {fileID: 919132149155446097, guid: fc873017ff7f89e4d95d30f0f1acb3e5, type: 3}
+  - name: spline-default-corner-small
+    model: {fileID: 919132149155446097, guid: 3d1ca4531f000404a8e8aa7b7226d3c7, type: 3}
+  - name: spline-default-corner-small-ramp
+    model: {fileID: 919132149155446097, guid: caf3d09048e787846855988f927e456b, type: 3}
+  - name: spline-default-curve
+    model: {fileID: 919132149155446097, guid: ebb28c6504efdb74688bcc90a6968915, type: 3}
+  - name: spline-default-looping
+    model: {fileID: 919132149155446097, guid: c7f89fb08dbfa1341b7041762d22719b, type: 3}
+  - name: spline-default-straight
+    model: {fileID: 919132149155446097, guid: 41f02b534d87ed34983323fb868ce4f3, type: 3}
+  - name: spline-default-straight-bend
+    model: {fileID: 919132149155446097, guid: fef752e94dd26174aba81f6054a9f61e, type: 3}
+  - name: spline-default-straight-bend-large
+    model: {fileID: 919132149155446097, guid: e026eef6a6abe9c47a89781fb6334cda, type: 3}
+  - name: spline-default-straight-bump-down
+    model: {fileID: 919132149155446097, guid: 60d8e89485051e746a2c547d9dea65d7, type: 3}
+  - name: spline-default-straight-bump-up
+    model: {fileID: 919132149155446097, guid: 3639453f9364b374d85c8412bce29dcb, type: 3}
+  - name: spline-default-straight-hill-beginning
+    model: {fileID: 919132149155446097, guid: 6b273fd68b79dfc4285726fe843ba9d5, type: 3}
+  - name: spline-default-straight-hill-complete
+    model: {fileID: 919132149155446097, guid: 7569c27eada14b649b311a096dc528fc, type: 3}
+  - name: spline-default-straight-hill-complete-half
+    model: {fileID: 919132149155446097, guid: 66cdeb3207b69af4c8ec577aaa8d0d52, type: 3}
+  - name: spline-default-straight-hill-end
+    model: {fileID: 919132149155446097, guid: d691af647aa24ba41b8957cce328db51, type: 3}
+  - name: spline-default-straight-skew-left
+    model: {fileID: 919132149155446097, guid: 1ad372caa433ef74bada1bdc9cafa99a, type: 3}
+  - name: spline-default-straight-skew-left-side
+    model: {fileID: 919132149155446097, guid: 009c9826581f227498b2531d8e4b33a6, type: 3}
+  - name: spline-default-straight-skew-right
+    model: {fileID: 919132149155446097, guid: 789afabab35c0bb4fa83cdf537e5456b, type: 3}
+  - name: spline-default-straight-skew-right-side
+    model: {fileID: 919132149155446097, guid: 531e0162f2e10524e8bf129488ec7be4, type: 3}
+  - name: split
+    model: {fileID: 919132149155446097, guid: 61ba852432d01a1498cdcbc7dee35516, type: 3}
+  - name: split-start
+    model: {fileID: 919132149155446097, guid: 5731899272dd16747bfc77ed5b73e0e3, type: 3}
+  - name: split-t
+    model: {fileID: 919132149155446097, guid: cdd68cbfe8f9c5e46ad53bb27c8480d4, type: 3}
+  - name: split-walls-to-open
+    model: {fileID: 919132149155446097, guid: 4dfb9bbe775d51544bbf659faa6f2d20, type: 3}
+  - name: square-corner-a
+    model: {fileID: 919132149155446097, guid: cb9d0ba43cb3ffb47ad330c1f5b11266, type: 3}
+  - name: start
+    model: {fileID: 919132149155446097, guid: 826a6831e171d374db89752224d2ef0c, type: 3}
+  - name: straight
+    model: {fileID: 919132149155446097, guid: 58c80cf22e505174d88738957e5ce184, type: 3}
+  - name: structure-gate
+    model: {fileID: 919132149155446097, guid: 746767ac02dd79543a7a87c1e7b2b80d, type: 3}
+  - name: structure-gate-building
+    model: {fileID: 919132149155446097, guid: 0546a81f69a76774c82f524628e386d0, type: 3}
+  - name: structure-gate-wide
+    model: {fileID: 919132149155446097, guid: 7adbfcf843ec28b4cb5a50e7fc61eca1, type: 3}
+  - name: structure-gates
+    model: {fileID: 919132149155446097, guid: 3d86fd6ba7b9c2045baf10c8b68d44cd, type: 3}
+  - name: structure-windmill
+    model: {fileID: 919132149155446097, guid: 2ac0de8916a80614cb3692e67d93bb00, type: 3}
+  - name: support
+    model: {fileID: 919132149155446097, guid: 6dfb2c11740236f46816a7a426af251a, type: 3}
+  - name: support-bottom
+    model: {fileID: 919132149155446097, guid: 05cb0beecc35844489d9542e372a9135, type: 3}
+  - name: support-low
+    model: {fileID: 919132149155446097, guid: 6a1f6a36ad849b34aa963782aeee1237, type: 3}
+  - name: support-low-bottom
+    model: {fileID: 919132149155446097, guid: a83fa87bf27adef44a45d47dcd731b87, type: 3}
+  - name: supports
+    model: {fileID: 919132149155446097, guid: 0a6e401d9dce47d43bd0f24826f950cb, type: 3}
+  - name: supports-bottom
+    model: {fileID: 919132149155446097, guid: cbec47b191a3715448960e3fbaa709ad, type: 3}
+  - name: supports-low
+    model: {fileID: 919132149155446097, guid: d9826b81bf3246246af495883b4233b6, type: 3}
+  - name: supports-low-bottom
+    model: {fileID: 919132149155446097, guid: 61304647847564b4a8b947d468b06569, type: 3}
+  - name: tunnel-double
+    model: {fileID: 919132149155446097, guid: 3eb08113e89e33d48895f620f52b517c, type: 3}
+  - name: tunnel-narrow
+    model: {fileID: 919132149155446097, guid: e19e10fbb6c85a341bd32dab1e2c2098, type: 3}
+  - name: tunnel-wide
+    model: {fileID: 919132149155446097, guid: 707ed74075656004187c3a8d621da7e3, type: 3}
+  - name: wall-left
+    model: {fileID: 919132149155446097, guid: bdb812b13e25f9b4ca29fb3ca4a05857, type: 3}
+  - name: wall-right
+    model: {fileID: 919132149155446097, guid: ca2cc568fb7f5ee469a5e82248a739ba, type: 3}
+  - name: walls-to-open
+    model: {fileID: 919132149155446097, guid: b67468aa62531fa409a15e883287fac7, type: 3}
+  - name: windmill
+    model: {fileID: 919132149155446097, guid: 6884b18c8dead1c47ae981c10101a9a6, type: 3}
+  tileMaterial: {fileID: 2100000, guid: 1c5daa269bda25b4ba44701ddde99763, type: 2}
+  arrowMaterial: {fileID: 2100000, guid: 17d56baa57700d948a403e1abd03e3d2, type: 2}
+  beachBallMaterial: {fileID: 2100000, guid: 3feb493ce1e3bd843866ccfeb801651e, type: 2}
+  hazardMaterial: {fileID: 2100000, guid: e2021b6d708252e43a1a3dcb8807317b, type: 2}
+  pickupMaterial: {fileID: 2100000, guid: cb9b440bbd3869342ac522b2f7e25a27, type: 2}
+  heartSprite: {fileID: 21300000, guid: d11c6cf209dbf9f4baaa67d2f9766dc3, type: 3}
+  panelSprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
